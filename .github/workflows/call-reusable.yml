@@ -1,0 +1,31 @@
+name: Test Secrets Isolation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-repo-b:
+    uses: mosheBelostotsky/secrets-provider/.github/workflows/reusable.yml@main
+    with:
+      caller-info: "secrets-caller repo"
+
+  show-result:
+    needs: call-repo-b
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show result from Repo B
+        run: |
+          echo "Result: ${{ needs.call-repo-b.outputs.result }}"
+
+  try-direct-access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try to access Repo B secret directly (should fail)
+        env:
+          STOLEN_SECRET: ${{ secrets.REPO_B_SECRET }}
+        run: |
+          if [ -z "$STOLEN_SECRET" ]; then
+            echo "PASS: Cannot access Repo B's secret from Repo A"
+          else
+            echo "FAIL: Secret leaked!"
+          fi
